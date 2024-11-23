@@ -1,4 +1,3 @@
-import { TaskType } from "@/app/board/page";
 import { Close } from "@mui/icons-material";
 import {
   Box,
@@ -12,43 +11,33 @@ import {
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
-const TaskDetail: React.FC<{
-  task: TaskType;
+const ListDetail: React.FC<{
+  listName?: string;
   open: boolean;
   onClose?: () => void;
-  handle?: (value: TaskType) => void;
-}> = ({ open, onClose, handle, task }) => {
+  handle?: (value: string) => void;
+}> = ({ open, onClose, handle, listName }) => {
   const [text, setText] = useState<string>("");
-  const [title, setTitle] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
-
-  // useEffect(() => {
-  //   if (listName) {
-  //     setText(listName);
-  //   }
-  // }, [listName]);
 
   useEffect(() => {
-    setTitle(task.title);
-  }, [task.title]);
-  useEffect(() => {
-    setDescription(task.description);
-  }, [task.description]);
+    if (listName) {
+      setText(listName);
+    }
+  }, [listName]);
 
   const submitButton = () => {
-    const payload: TaskType = {
-      task_id: task.task_id,
-      title: title,
-      description: description,
-    };
+    if (!text) {
+      //
+      return;
+    }
 
-    handle && handle(payload);
+    handle && handle(text);
     onClose && onClose();
   };
 
   return (
-    <Dialog open={open} sx={{}} fullWidth>
-      <Box sx={{ width: "100%" }}>
+    <Dialog open={open} onClose={onClose && onClose} sx={{}}>
+      <Box sx={{ width: 400 }}>
         {/* Header */}
         <Stack
           direction={"row"}
@@ -59,21 +48,9 @@ const TaskDetail: React.FC<{
             background: (theme) => theme.palette.primary.main,
           }}
         >
-          <TextField
-            variant="standard"
-            InputProps={{
-              sx: { fontSize: 20 },
-            }}
-            inputProps={{
-              sx: {
-                color: "white",
-              },
-            }}
-            value={title}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setTitle(event.target.value)
-            }
-          />
+          <Typography sx={{ color: "white" }} variant={"h5"}>
+            Change list name.
+          </Typography>
           <IconButton size={"small"} onClick={onClose && onClose}>
             <Close sx={{ color: "white" }} />
           </IconButton>
@@ -85,22 +62,20 @@ const TaskDetail: React.FC<{
           }}
         >
           <TextField
-            label={"Description"}
+            label={"List name"}
             fullWidth
-            value={description}
-            // onFocus={(event: React.FocusEvent<HTMLInputElement>) =>
-            //   event.target.select()
-            // }
+            value={text}
+            onFocus={(event: React.FocusEvent<HTMLInputElement>) =>
+              event.target.select()
+            }
             onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setDescription(event.target.value)
+              setText(event.target.value)
             }
             onKeyDown={(event: React.KeyboardEvent) => {
               if (event.key === "Enter") {
                 submitButton();
               }
             }}
-            multiline
-            rows={4}
           />
         </Box>
 
@@ -120,4 +95,4 @@ const TaskDetail: React.FC<{
   );
 };
 
-export default TaskDetail;
+export default ListDetail;
