@@ -4,29 +4,27 @@ import TaskDetail from "@/components/TaskDetail";
 import { generateUUID } from "@/utils/uuid";
 import { MoreVert } from "@mui/icons-material";
 import { Box, IconButton, Stack, Typography } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   DragDropContext,
   Droppable,
   Draggable,
   DropResult,
+  DragStart,
 } from "react-beautiful-dnd";
 
 export interface TaskType {
   task_id: string;
   title: string;
   description: string;
-  [key: string]: any;
 }
 export interface ListType {
   list_id: string;
   title: string;
   tasks: TaskType[];
-  [key: string]: any;
 }
 
 const BoardPage: React.FC = () => {
-  const [isClient, setIsClient] = useState<boolean>(false);
   const [listDetailDialog, setListDetailDialog] = useState<{
     open: boolean;
     listName: string;
@@ -48,13 +46,9 @@ const BoardPage: React.FC = () => {
       title: "",
       description: "",
     },
-    handle: (task: TaskType) => {},
+    handle: () => {},
   });
   const [lists, setLists] = useState<ListType[]>([]);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   // const [lists, setLists] = useState<ListType[]>([
   //   {
@@ -106,7 +100,7 @@ const BoardPage: React.FC = () => {
     null
   );
 
-  const onDragStart = (start: any) => {
+  const onDragStart = (start: DragStart) => {
     if (String(start?.draggableId).includes("list")) {
       setDraggingType("list");
     } else if (String(start?.draggableId).includes("task")) {
@@ -121,7 +115,7 @@ const BoardPage: React.FC = () => {
       const type = result.draggableId.includes("list") ? "list" : "task";
 
       if (type === "list") {
-        let updatedLists = [...lists];
+        const updatedLists = [...lists];
         const [removed] = updatedLists.splice(result.source.index, 1);
         updatedLists.splice(result.destination.index, 0, removed);
         setLists(updatedLists);
@@ -156,9 +150,9 @@ const BoardPage: React.FC = () => {
 
   const handleAddTaskButton = (listId: string) => {
     let updatedList = [...lists];
-    updatedList = updatedList.map((list, index) => {
+    updatedList = updatedList.map((list) => {
       if (list.list_id === listId) {
-        let updatedTask = [...list.tasks];
+        const updatedTask = [...list.tasks];
         updatedTask.push({
           task_id: generateUUID(),
           title: "New Task",
@@ -172,7 +166,7 @@ const BoardPage: React.FC = () => {
   };
 
   const handleAddListButton = () => {
-    let updatedList = [...lists];
+    const updatedList = [...lists];
     updatedList.push({
       list_id: "new" + generateUUID(),
       title: "List name",
@@ -180,9 +174,9 @@ const BoardPage: React.FC = () => {
     });
     setLists(updatedList);
   };
-  if (!isClient) {
-    return null;
-  }
+  // if (!isClient) {
+  //   return null;
+  // }
 
   return (
     <Box>
@@ -190,7 +184,7 @@ const BoardPage: React.FC = () => {
         <Box sx={{ width: "100vw", height: "100vh", overflowX: "auto" }}>
           <Droppable
             key={"list-drop"}
-            droppableId="list-drop"
+            droppableId={"list-drop"}
             isDropDisabled={draggingType === "task"}
             isCombineEnabled={false}
             ignoreContainerClipping={false}

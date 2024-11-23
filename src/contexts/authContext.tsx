@@ -1,9 +1,18 @@
+import { ApiResponse, profile } from "@/utils/api";
 import { useRouter } from "next/navigation";
 import React, { createContext, useState, ReactNode, useEffect } from "react";
 
+export interface User {
+  avatar_url: string;
+  bio: string;
+  email: string;
+  full_name: string;
+  user_id: string;
+  user_name: string;
+}
 interface AuthContextType {
-  user: any;
-  setUser: React.Dispatch<React.SetStateAction<any>>;
+  user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   logout: () => void;
 }
 
@@ -18,17 +27,19 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    //check login
-    let token = localStorage.getItem("token");
-    console.log("token :", token);
-    if (token) {
-    } else {
-      logout();
-    }
+    const getProfile = async () => {
+      const result: ApiResponse = await profile();
+      if (!result.status) {
+        logout();
+      } else {
+        setUser(result?.data?.user ?? null);
+      }
+    };
+    getProfile();
   }, []);
 
   const logout = () => {

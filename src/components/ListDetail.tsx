@@ -3,7 +3,6 @@ import {
   Box,
   Button,
   Dialog,
-  DialogContent,
   IconButton,
   Stack,
   TextField,
@@ -32,19 +31,18 @@ const ListDetail: React.FC<{
       return;
     }
 
-    handle && handle(text);
-    onClose && onClose();
+    handle?.(text);
+    onClose?.();
   };
 
   const removeButton = () => {
-    onRemove && onRemove();
-    onClose && onClose();
+    onRemove?.();
+    onClose?.();
   };
 
   return (
     <Dialog open={open} onClose={onClose && onClose} sx={{}}>
       <Box sx={{ width: 400 }}>
-        {/* Header */}
         <Stack
           direction={"row"}
           alignItems={"center"}

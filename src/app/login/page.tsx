@@ -10,7 +10,8 @@ import {
   Link,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { login } from "@/utils/api";
+import { ApiResponse, login } from "@/utils/api";
+import { toast } from "react-toastify";
 
 interface IFormInput {
   email: string;
@@ -18,7 +19,6 @@ interface IFormInput {
 }
 
 const LoginPage: React.FC = () => {
-
   const {
     register,
     handleSubmit,
@@ -27,9 +27,13 @@ const LoginPage: React.FC = () => {
   const router = useRouter();
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
-    const result: any = await login(data.email, data.password);
-    localStorage.setItem("token", result?.token || "");
-    router.replace('/board')
+    const result: ApiResponse = await login(data.email, data.password);
+    if (!result.status) {
+      return toast.error(result.message);
+    }
+
+    localStorage.setItem("token", result?.data?.token || "");
+    router.replace("/board");
   };
 
   const navigateToRegister = () => {
@@ -76,7 +80,7 @@ const LoginPage: React.FC = () => {
             </Stack>
           </form>
           <Stack direction="row" justifyContent="center" spacing={1} mt={2}>
-            <Typography variant="body2">Don't have an account?</Typography>
+            <Typography variant="body2">{`Don't have an account?`}</Typography>
             <Link
               component="button"
               variant="body2"

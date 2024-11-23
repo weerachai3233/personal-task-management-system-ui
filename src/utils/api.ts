@@ -1,13 +1,24 @@
+import { User } from "@/contexts/authContext";
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
-import { toast } from "react-toastify";
 
 axios.defaults.baseURL = "http://localhost:4000";
-
-export interface ApiResponse {
-  [key: string]: any;
+let token: string = "";
+if (typeof localStorage !== "undefined") {
+  token = localStorage.getItem("token") || "";
 }
 
-export const login = async (email: string, password: string) => {
+export interface ApiResponse {
+  status: boolean;
+  message: string;
+  data?: {
+    token?: string;
+    user?: User;
+  };
+}
+export const login = (
+  email: string,
+  password: string
+): Promise<ApiResponse> => {
   return new Promise((resolve) => {
     const config: AxiosRequestConfig = {
       url: `/api/user/login`,
@@ -18,12 +29,53 @@ export const login = async (email: string, password: string) => {
         password,
       },
     };
+
     axios(config)
-      .then((response: AxiosResponse<ApiResponse>) => {
-        resolve(response.data);
+      .then((response: AxiosResponse) => {
+        resolve({
+          status: true,
+          message: "Success.",
+          data: {
+            token: response?.data?.token,
+          },
+        });
       })
       .catch((error: AxiosError<ApiResponse>) => {
-        toast.error(String(error.response?.data?.message || ""));
+        resolve({
+          status: false,
+          message: String(error.response?.data?.message || ""),
+        });
+      });
+  });
+};
+
+export const profile = (): Promise<ApiResponse> => {
+  return new Promise((resolve) => {
+    const config: AxiosRequestConfig = {
+      url: `/api/user/profile`,
+      method: "GET",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+      params: {},
+      data: {},
+    };
+
+    axios(config)
+      .then((response: AxiosResponse) => {
+        resolve({
+          status: true,
+          message: "Success.",
+          data: {
+            user: response?.data?.user,
+          },
+        });
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        resolve({
+          status: false,
+          message: String(error.response?.data?.message || ""),
+        });
       });
   });
 };

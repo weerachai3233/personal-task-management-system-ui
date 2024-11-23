@@ -4,11 +4,9 @@ import {
   Box,
   Button,
   Dialog,
-  DialogContent,
   IconButton,
   Stack,
   TextField,
-  Typography,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 
@@ -19,7 +17,6 @@ const TaskDetail: React.FC<{
   handle?: (value: TaskType) => void;
   onRemove?: () => void;
 }> = ({ open, onClose, handle, task, onRemove }) => {
-  const [text, setText] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
 
@@ -37,8 +34,8 @@ const TaskDetail: React.FC<{
   }, [task.description]);
 
   const removeButton = () => {
-    onRemove && onRemove();
-    onClose && onClose();
+    onRemove?.();
+    onClose?.();
   };
 
   const submitButton = () => {
@@ -48,8 +45,8 @@ const TaskDetail: React.FC<{
       description: description,
     };
 
-    handle && handle(payload);
-    onClose && onClose();
+    handle?.(payload);
+    onClose?.();
   };
 
   return (
@@ -94,17 +91,9 @@ const TaskDetail: React.FC<{
             label={"Description"}
             fullWidth
             value={description}
-            // onFocus={(event: React.FocusEvent<HTMLInputElement>) =>
-            //   event.target.select()
-            // }
             onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
               setDescription(event.target.value)
             }
-            onKeyDown={(event: React.KeyboardEvent) => {
-              // if (event.key === "Enter") {
-              //   submitButton();
-              // }
-            }}
             multiline
             rows={4}
           />
