@@ -4,7 +4,7 @@ import TaskDetail from "@/components/TaskDetail";
 import { generateUUID } from "@/utils/uuid";
 import { MoreVert } from "@mui/icons-material";
 import { Box, IconButton, Stack, Typography } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -18,8 +18,15 @@ export interface TaskType {
   description: string;
   [key: string]: any;
 }
+export interface ListType {
+  list_id: string;
+  title: string;
+  tasks: TaskType[];
+  [key: string]: any;
+}
 
-const App: React.FC = () => {
+const BoardPage: React.FC = () => {
+  const [isClient, setIsClient] = useState<boolean>(false);
   const [listDetailDialog, setListDetailDialog] = useState<{
     open: boolean;
     listName: string;
@@ -43,52 +50,57 @@ const App: React.FC = () => {
     },
     handle: (task: TaskType) => {},
   });
+  const [lists, setLists] = useState<ListType[]>([]);
 
-  const [lists, setLists] = useState([
-    {
-      list_id: "1",
-      title: "To Do",
-      tasks: [
-        {
-          task_id: "1",
-          title: "Task 1",
-          description: "Description for Task 1",
-        },
-        {
-          task_id: "2",
-          title: "Task 2",
-          description: "Description for Task 2",
-        },
-      ],
-    },
-    {
-      list_id: "2",
-      title: "In Progress",
-      tasks: [
-        {
-          task_id: "3",
-          title: "Task 3",
-          description: "Description for Task 3",
-        },
-        {
-          task_id: "4",
-          title: "Task 4",
-          description: "Description for Task 4",
-        },
-      ],
-    },
-    {
-      list_id: "3",
-      title: "Done",
-      tasks: [
-        {
-          task_id: "5",
-          title: "Task 5",
-          description: "Description for Task 5",
-        },
-      ],
-    },
-  ]);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // const [lists, setLists] = useState<ListType[]>([
+  //   {
+  //     list_id: "1",
+  //     title: "To Do",
+  //     tasks: [
+  //       {
+  //         task_id: "1",
+  //         title: "Task 1",
+  //         description: "Description for Task 1",
+  //       },
+  //       {
+  //         task_id: "2",
+  //         title: "Task 2",
+  //         description: "Description for Task 2",
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     list_id: "2",
+  //     title: "In Progress",
+  //     tasks: [
+  //       {
+  //         task_id: "3",
+  //         title: "Task 3",
+  //         description: "Description for Task 3",
+  //       },
+  //       {
+  //         task_id: "4",
+  //         title: "Task 4",
+  //         description: "Description for Task 4",
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     list_id: "3",
+  //     title: "Done",
+  //     tasks: [
+  //       {
+  //         task_id: "5",
+  //         title: "Task 5",
+  //         description: "Description for Task 5",
+  //       },
+  //     ],
+  //   },
+  // ]);
 
   const [draggingType, setDraggingType] = useState<"list" | "task" | null>(
     null
@@ -103,44 +115,43 @@ const App: React.FC = () => {
   };
 
   const onDragEnd = (result: DropResult) => {
-    if (!result.destination) return;
+    try {
+      if (!result?.destination) return;
 
-    const type = result.draggableId.includes("list") ? "list" : "task";
+      const type = result.draggableId.includes("list") ? "list" : "task";
 
-    if (type === "list") {
-      // Handle list dragging
-      let updatedLists = [...lists];
-      const [removed] = updatedLists.splice(result.source.index, 1);
-      updatedLists.splice(result.destination.index, 0, removed);
-      setLists(updatedLists);
-    } else if (type === "task") {
-      const sourceListIndex = lists.findIndex(
-        (list) => `task-${list.list_id}` === result.source.droppableId
-      );
-      const destinationListIndex = lists.findIndex(
-        (list) => `task-${list.list_id}` === result?.destination?.droppableId
-      );
+      if (type === "list") {
+        let updatedLists = [...lists];
+        const [removed] = updatedLists.splice(result.source.index, 1);
+        updatedLists.splice(result.destination.index, 0, removed);
+        setLists(updatedLists);
+      } else if (type === "task") {
+        const sourceListIndex = lists.findIndex(
+          (list) => `task-${list.list_id}` === result.source.droppableId
+        );
+        const destinationListIndex = lists.findIndex(
+          (list) => `task-${list.list_id}` === result?.destination?.droppableId
+        );
 
-      const sourceList = lists[sourceListIndex];
-      const destinationList = lists[destinationListIndex];
+        const sourceList = lists[sourceListIndex];
+        const destinationList = lists[destinationListIndex];
 
-      const [movedTask] = sourceList.tasks.splice(result.source.index, 1);
+        const [movedTask] = sourceList.tasks.splice(result.source.index, 1);
 
-      if (sourceListIndex === destinationListIndex) {
-        // Reordering tasks in the same list
-        destinationList.tasks.splice(result.destination.index, 0, movedTask);
-      } else {
-        // Moving tasks between different lists
-        destinationList.tasks.splice(result.destination.index, 0, movedTask);
+        if (sourceListIndex === destinationListIndex) {
+          destinationList.tasks.splice(result.destination.index, 0, movedTask);
+        } else {
+          destinationList.tasks.splice(result.destination.index, 0, movedTask);
+        }
+
+        const updatedLists = [...lists];
+        updatedLists[sourceListIndex] = sourceList;
+        updatedLists[destinationListIndex] = destinationList;
+        setLists(updatedLists);
       }
 
-      const updatedLists = [...lists];
-      updatedLists[sourceListIndex] = sourceList;
-      updatedLists[destinationListIndex] = destinationList;
-      setLists(updatedLists);
-    }
-
-    setDraggingType(null); // Reset dragging type
+      setDraggingType(null);
+    } catch {}
   };
 
   const handleAddTaskButton = (listId: string) => {
@@ -169,6 +180,9 @@ const App: React.FC = () => {
     });
     setLists(updatedList);
   };
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <Box>
@@ -200,7 +214,6 @@ const App: React.FC = () => {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         sx={{
-                          // minHeight: 100,
                           width: 200,
                           minWidth: 200,
                           border: "1px solid blue",
@@ -258,7 +271,6 @@ const App: React.FC = () => {
                               spacing={1}
                               sx={{
                                 padding: 1,
-                                // height: "100%",
                               }}
                             >
                               {list.tasks.map((task, taskIndex) => (
@@ -281,7 +293,6 @@ const App: React.FC = () => {
                                       }}
                                       onClick={(e) => {
                                         if (e.detail === 2) {
-                                          // onTaskDoubleClick(task.task_id);
                                           setTaskDetailDialog({
                                             open: true,
                                             task: task,
@@ -414,4 +425,4 @@ const AddListButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     </Stack>
   );
 };
-export default App;
+export default BoardPage;

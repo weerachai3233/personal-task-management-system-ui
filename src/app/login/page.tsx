@@ -10,6 +10,7 @@ import {
   Link,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
+import { login } from "@/utils/api";
 
 interface IFormInput {
   email: string;
@@ -17,6 +18,7 @@ interface IFormInput {
 }
 
 const LoginPage: React.FC = () => {
+
   const {
     register,
     handleSubmit,
@@ -24,8 +26,10 @@ const LoginPage: React.FC = () => {
   } = useForm<IFormInput>();
   const router = useRouter();
 
-  const onSubmit: SubmitHandler<IFormInput> = (data) => {
-    console.log("data :", data);
+  const onSubmit: SubmitHandler<IFormInput> = async (data) => {
+    const result: any = await login(data.email, data.password);
+    localStorage.setItem("token", result?.token || "");
+    router.replace('/board')
   };
 
   const navigateToRegister = () => {

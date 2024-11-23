@@ -16,7 +16,8 @@ const ListDetail: React.FC<{
   open: boolean;
   onClose?: () => void;
   handle?: (value: string) => void;
-}> = ({ open, onClose, handle, listName }) => {
+  onRemove?: () => void;
+}> = ({ open, onClose, handle, listName, onRemove }) => {
   const [text, setText] = useState<string>("");
 
   useEffect(() => {
@@ -32,6 +33,11 @@ const ListDetail: React.FC<{
     }
 
     handle && handle(text);
+    onClose && onClose();
+  };
+
+  const removeButton = () => {
+    onRemove && onRemove();
     onClose && onClose();
   };
 
@@ -83,9 +89,12 @@ const ListDetail: React.FC<{
         <Stack
           direction={"row"}
           alignItems={"center"}
-          justifyContent={"flex-end"}
+          justifyContent={"space-between"}
           sx={{ padding: 1 }}
         >
+          <Button variant="contained" color={"error"} onClick={removeButton}>
+            Remove
+          </Button>
           <Button variant={"contained"} onClick={submitButton}>
             Ok
           </Button>

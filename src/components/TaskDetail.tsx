@@ -17,7 +17,8 @@ const TaskDetail: React.FC<{
   open: boolean;
   onClose?: () => void;
   handle?: (value: TaskType) => void;
-}> = ({ open, onClose, handle, task }) => {
+  onRemove?: () => void;
+}> = ({ open, onClose, handle, task, onRemove }) => {
   const [text, setText] = useState<string>("");
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -34,6 +35,11 @@ const TaskDetail: React.FC<{
   useEffect(() => {
     setDescription(task.description);
   }, [task.description]);
+
+  const removeButton = () => {
+    onRemove && onRemove();
+    onClose && onClose();
+  };
 
   const submitButton = () => {
     const payload: TaskType = {
@@ -95,9 +101,9 @@ const TaskDetail: React.FC<{
               setDescription(event.target.value)
             }
             onKeyDown={(event: React.KeyboardEvent) => {
-              if (event.key === "Enter") {
-                submitButton();
-              }
+              // if (event.key === "Enter") {
+              //   submitButton();
+              // }
             }}
             multiline
             rows={4}
@@ -108,9 +114,12 @@ const TaskDetail: React.FC<{
         <Stack
           direction={"row"}
           alignItems={"center"}
-          justifyContent={"flex-end"}
+          justifyContent={"space-between"}
           sx={{ padding: 1 }}
         >
+          <Button variant="contained" color={"error"} onClick={removeButton}>
+            Remove
+          </Button>
           <Button variant={"contained"} onClick={submitButton}>
             Ok
           </Button>
