@@ -16,6 +16,7 @@ export interface Project {
 export interface Board {
   board_id: string;
   title: string;
+  lists?: List[];
 }
 
 export interface ApiResponse {
@@ -27,6 +28,7 @@ export interface ApiResponse {
     projects?: Project[];
     boards?: Board[];
     lists?: List[];
+    data?: Board;
   };
 }
 

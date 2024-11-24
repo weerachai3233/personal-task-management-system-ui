@@ -13,9 +13,11 @@ import {
   DropResult,
   DragStart,
 } from "react-beautiful-dnd";
-import { ApiResponse, board, List, Task } from "@/utils/api";
+import { ApiResponse, Board, board, List, Task } from "@/utils/api";
+import { toast } from "react-toastify";
 
 const BoardPage: React.FC = () => {
+  const [loadedBoard, setLoadedBoard] = useState<boolean>(false);
   const [listDetailDialog, setListDetailDialog] = useState<{
     open: boolean;
     listName: string;
@@ -26,6 +28,10 @@ const BoardPage: React.FC = () => {
     listName: "",
     handle: () => {},
     remove: () => {},
+  });
+  const [boardData, setBoardData] = useState<Board>({
+    board_id: "",
+    title: "",
   });
 
   const [taskDetailDialog, setTaskDetailDialog] = useState<{
@@ -51,8 +57,27 @@ const BoardPage: React.FC = () => {
   );
 
   useEffect(() => {
-    console.log("lists", lists);
+    if (loadedBoard) {
+      updateBoard();
+    }
   }, [lists]);
+
+  const updateBoard = async () => {
+    if (boardData.board_id) {
+      const result: ApiResponse = await board(
+        "PUT",
+        `/${boardData.board_id}`,
+        {},
+        {
+          lists: lists,
+        }
+      );
+      if (result.status) {
+      } else {
+        toast.error(result.message);
+      }
+    }
+  };
 
   const onDragStart = (start: DragStart) => {
     if (String(start?.draggableId).includes("list")) {
@@ -147,13 +172,20 @@ const BoardPage: React.FC = () => {
   };
 
   const onBoardChange = async (id: string) => {
+    setLoadedBoard(false);
     if (id) {
       const result: ApiResponse = await board("GET", `/${id}`, {}, {});
       if (result.status) {
-        setLists(result?.data?.lists || []);
+        setBoardData({
+          board_id: id,
+          title: "",
+        });
+
+        setLists(result?.data?.data?.lists || []);
       } else {
         setLists([]);
       }
+      setLoadedBoard(true);
     } else {
       setLists([]);
     }
