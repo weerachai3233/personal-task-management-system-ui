@@ -31,16 +31,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const getProfile = async () => {
-      const result: ApiResponse = await profile();
-      if (!result.status) {
-        logout();
-      } else {
-        setUser(result?.data?.user ?? null);
-      }
-    };
     getProfile();
   }, []);
+
+  const getProfile = async () => {
+    const result: ApiResponse = await profile();
+    if (!result.status) {
+      logout();
+    } else {
+      setUser(result?.data?.user ?? null);
+    }
+  };
 
   const logout = () => {
     localStorage.clear();

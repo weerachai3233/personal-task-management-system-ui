@@ -1,4 +1,4 @@
-import { TaskType } from "@/app/board/page";
+import { Task } from "@/utils/api";
 import { Close } from "@mui/icons-material";
 import {
   Box,
@@ -11,10 +11,10 @@ import {
 import React, { useEffect, useState } from "react";
 
 const TaskDetail: React.FC<{
-  task: TaskType;
+  task: Task;
   open: boolean;
   onClose?: () => void;
-  handle?: (value: TaskType) => void;
+  handle?: (value: Task) => void;
   onRemove?: () => void;
 }> = ({ open, onClose, handle, task, onRemove }) => {
   const [title, setTitle] = useState<string>("");
@@ -39,10 +39,11 @@ const TaskDetail: React.FC<{
   };
 
   const submitButton = () => {
-    const payload: TaskType = {
+    const payload: Task = {
       task_id: task.task_id,
       title: title,
       description: description,
+      position: 0,
     };
 
     handle?.(payload);

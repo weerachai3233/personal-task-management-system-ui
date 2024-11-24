@@ -1,8 +1,18 @@
-'use client'
+"use client";
 import React from "react";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { Stack, Paper, Typography, TextField, Button, Link } from "@mui/material";
+import {
+  Stack,
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  Link,
+} from "@mui/material";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { ApiResponse } from "@/utils/api";
+import { register as registerApi } from "@/utils/api";
 
 interface IFormInput {
   name: string;
@@ -12,15 +22,50 @@ interface IFormInput {
 }
 
 const RegisterPage: React.FC = () => {
-  const { register, handleSubmit, formState: { errors }, watch } = useForm<IFormInput>();
-  const router = useRouter()
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    watch,
+    reset,
+  } = useForm<IFormInput>();
+  const router = useRouter();
 
-  const onSubmit: SubmitHandler<IFormInput> = (data) => {
-    console.log(data); // Handle form submission
+  const onSubmit: SubmitHandler<IFormInput> = async (data: IFormInput) => {
+    if (!data.name) {
+      toast.error("Name is required.");
+      return;
+    }
+    if (!data.email) {
+      toast.error("Email is required.");
+      return;
+    }
+    if (!data.password) {
+      toast.error("Password is required.");
+      return;
+    }
+
+    if (data.password !== data.confirmPassword) {
+      toast.error("Password is not match.");
+      return;
+    }
+
+    const result: ApiResponse = await registerApi(
+      data.name,
+      data.email,
+      data.password
+    );
+    if (result.status) {
+      toast.success(result.message);
+      reset();
+      navigateToLogin();
+    } else {
+      toast.error(result.message);
+    }
   };
 
   const navigateToLogin = () => {
-    router.replace('/login')
+    router.replace("/login");
   };
 
   return (
@@ -76,9 +121,16 @@ const RegisterPage: React.FC = () => {
                     value === watch("password") || "Passwords do not match",
                 })}
                 error={!!errors.confirmPassword}
-                helperText={errors.confirmPassword ? errors.confirmPassword.message : ""}
+                helperText={
+                  errors.confirmPassword ? errors.confirmPassword.message : ""
+                }
               />
-              <Button type="submit" variant="contained" color="primary" fullWidth>
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                fullWidth
+              >
                 Register
               </Button>
             </Stack>
@@ -89,7 +141,7 @@ const RegisterPage: React.FC = () => {
               component="button"
               variant="body2"
               color="primary"
-              onClick={navigateToLogin}  // Navigate to the Login page
+              onClick={navigateToLogin}
             >
               Login here
             </Link>

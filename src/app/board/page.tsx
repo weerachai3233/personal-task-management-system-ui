@@ -1,10 +1,11 @@
 "use client";
+import Layout from "@/components/Layout";
 import ListDetail from "@/components/ListDetail";
 import TaskDetail from "@/components/TaskDetail";
 import { generateUUID } from "@/utils/uuid";
 import { MoreVert } from "@mui/icons-material";
 import { Box, IconButton, Stack, Typography } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -12,93 +13,46 @@ import {
   DropResult,
   DragStart,
 } from "react-beautiful-dnd";
-
-export interface TaskType {
-  task_id: string;
-  title: string;
-  description: string;
-}
-export interface ListType {
-  list_id: string;
-  title: string;
-  tasks: TaskType[];
-}
+import { ApiResponse, board, List, Task } from "@/utils/api";
 
 const BoardPage: React.FC = () => {
   const [listDetailDialog, setListDetailDialog] = useState<{
     open: boolean;
     listName: string;
     handle: (name: string) => void;
+    remove: () => void;
   }>({
     open: false,
     listName: "",
     handle: () => {},
+    remove: () => {},
   });
 
   const [taskDetailDialog, setTaskDetailDialog] = useState<{
     open: boolean;
-    task: TaskType;
-    handle: (task: TaskType) => void;
+    task: Task;
+    handle: (task: Task) => void;
+    remove: () => void;
   }>({
     open: false,
     task: {
       task_id: "",
       title: "",
       description: "",
+      position: 0,
     },
     handle: () => {},
+    remove: () => {},
   });
-  const [lists, setLists] = useState<ListType[]>([]);
-
-  // const [lists, setLists] = useState<ListType[]>([
-  //   {
-  //     list_id: "1",
-  //     title: "To Do",
-  //     tasks: [
-  //       {
-  //         task_id: "1",
-  //         title: "Task 1",
-  //         description: "Description for Task 1",
-  //       },
-  //       {
-  //         task_id: "2",
-  //         title: "Task 2",
-  //         description: "Description for Task 2",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     list_id: "2",
-  //     title: "In Progress",
-  //     tasks: [
-  //       {
-  //         task_id: "3",
-  //         title: "Task 3",
-  //         description: "Description for Task 3",
-  //       },
-  //       {
-  //         task_id: "4",
-  //         title: "Task 4",
-  //         description: "Description for Task 4",
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     list_id: "3",
-  //     title: "Done",
-  //     tasks: [
-  //       {
-  //         task_id: "5",
-  //         title: "Task 5",
-  //         description: "Description for Task 5",
-  //       },
-  //     ],
-  //   },
-  // ]);
+  const [lists, setLists] = useState<List[]>([]);
 
   const [draggingType, setDraggingType] = useState<"list" | "task" | null>(
     null
   );
+
+  useEffect(() => {
+    console.log("lists", lists);
+  }, [lists]);
 
   const onDragStart = (start: DragStart) => {
     if (String(start?.draggableId).includes("list")) {
@@ -127,15 +81,29 @@ const BoardPage: React.FC = () => {
           (list) => `task-${list.list_id}` === result?.destination?.droppableId
         );
 
+        if (lists.length === 0) {
+          return;
+        }
         const sourceList = lists[sourceListIndex];
         const destinationList = lists[destinationListIndex];
 
-        const [movedTask] = sourceList.tasks.splice(result.source.index, 1);
+        const [movedTask] = (sourceList.tasks || []).splice(
+          result.source.index,
+          1
+        );
 
         if (sourceListIndex === destinationListIndex) {
-          destinationList.tasks.splice(result.destination.index, 0, movedTask);
+          (destinationList.tasks || []).splice(
+            result.destination.index,
+            0,
+            movedTask
+          );
         } else {
-          destinationList.tasks.splice(result.destination.index, 0, movedTask);
+          (destinationList.tasks || []).splice(
+            result.destination.index,
+            0,
+            movedTask
+          );
         }
 
         const updatedLists = [...lists];
@@ -152,11 +120,12 @@ const BoardPage: React.FC = () => {
     let updatedList = [...lists];
     updatedList = updatedList.map((list) => {
       if (list.list_id === listId) {
-        const updatedTask = [...list.tasks];
+        const updatedTask = [...(list.tasks || [])];
         updatedTask.push({
           task_id: generateUUID(),
           title: "New Task",
           description: "",
+          position: 0,
         });
         list.tasks = updatedTask;
       }
@@ -171,210 +140,273 @@ const BoardPage: React.FC = () => {
       list_id: "new" + generateUUID(),
       title: "List name",
       tasks: [],
+      board_id: "",
+      position: "",
     });
     setLists(updatedList);
   };
-  // if (!isClient) {
-  //   return null;
-  // }
+
+  const onBoardChange = async (id: string) => {
+    if (id) {
+      const result: ApiResponse = await board("GET", `/${id}`, {}, {});
+      if (result.status) {
+        setLists(result?.data?.lists || []);
+      } else {
+        setLists([]);
+      }
+    } else {
+      setLists([]);
+    }
+  };
 
   return (
-    <Box>
-      <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-        <Box sx={{ width: "100vw", height: "100vh", overflowX: "auto" }}>
-          <Droppable
-            key={"list-drop"}
-            droppableId={"list-drop"}
-            isDropDisabled={draggingType === "task"}
-            isCombineEnabled={false}
-            ignoreContainerClipping={false}
-            direction="horizontal"
+    <Layout onBoardChange={onBoardChange}>
+      <Box>
+        <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <Box
+            sx={{
+              width: "calc(100vw - 220px)",
+              height: "calc(100vh - 70px)",
+              overflowX: "auto",
+              marginTop: "20px",
+              marginLeft: "20px",
+            }}
           >
-            {(provided) => (
-              <Stack
-                direction={"row"}
-                spacing={1}
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-              >
-                {lists.map((list, listIndex) => (
-                  <Draggable
-                    draggableId={"list" + list.list_id}
-                    key={list.list_id}
-                    index={listIndex}
-                  >
-                    {(provided) => (
-                      <Box
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        sx={{
-                          width: 200,
-                          minWidth: 200,
-                          border: "1px solid blue",
-                        }}
-                      >
-                        <Stack
-                          direction={"row"}
-                          alignItems={"center"}
-                          justifyContent={"space-between"}
-                          {...provided.dragHandleProps}
+            <Droppable
+              key={"list-drop"}
+              droppableId={"list-drop"}
+              isDropDisabled={draggingType === "task"}
+              isCombineEnabled={false}
+              ignoreContainerClipping={false}
+              direction="horizontal"
+            >
+              {(provided) => (
+                <Stack
+                  direction={"row"}
+                  spacing={1}
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                >
+                  {lists.map((list, listIndex) => (
+                    <Draggable
+                      draggableId={"list" + list.list_id}
+                      key={list.list_id}
+                      index={listIndex}
+                    >
+                      {(provided) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
                           sx={{
-                            background: "pink",
-                            padding: 1,
-                            userSelect: "none",
+                            width: 200,
+                            minWidth: 200,
+                            border: "1px solid blue",
+                            background: "white",
                           }}
                         >
-                          <Typography>{list.title}</Typography>
-                          <IconButton
-                            size={"small"}
-                            onClick={() => {
-                              setListDetailDialog({
-                                open: true,
-                                listName: list.title,
-                                handle: (name: string) => {
-                                  let updatedList = [...lists];
-
-                                  updatedList = updatedList.map((item) => {
-                                    if (item.list_id === list.list_id) {
-                                      item.title = name;
-                                    }
-                                    return item;
-                                  });
-
-                                  setLists(updatedList);
-                                },
-                              });
+                          <Stack
+                            direction={"row"}
+                            alignItems={"center"}
+                            justifyContent={"space-between"}
+                            {...provided.dragHandleProps}
+                            sx={{
+                              background: (theme) => theme.palette.primary.main,
+                              padding: 1,
+                              userSelect: "none",
                             }}
                           >
-                            <MoreVert />
-                          </IconButton>
-                        </Stack>
+                            <Typography sx={{ color: "white" }}>
+                              {list.title}
+                            </Typography>
+                            <IconButton
+                              size={"small"}
+                              onClick={() => {
+                                setListDetailDialog({
+                                  open: true,
+                                  listName: list.title,
+                                  handle: (name: string) => {
+                                    let updatedList = [...lists];
 
-                        <Droppable
-                          key={`task${list.list_id}`}
-                          droppableId={`task-${list.list_id}`}
-                          isDropDisabled={draggingType === "list"}
-                          isCombineEnabled={false}
-                          ignoreContainerClipping={false}
-                          direction="vertical"
-                        >
-                          {(provided) => (
-                            <Stack
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              spacing={1}
-                              sx={{
-                                padding: 1,
+                                    updatedList = updatedList.map((item) => {
+                                      if (item.list_id === list.list_id) {
+                                        item.title = name;
+                                      }
+                                      return item;
+                                    });
+
+                                    setLists(updatedList);
+                                  },
+                                  remove: () => {
+                                    let updatedList = [...lists];
+                                    updatedList = updatedList.filter(
+                                      (item) => item.list_id !== list.list_id
+                                    );
+
+                                    setLists(updatedList);
+                                  },
+                                });
                               }}
                             >
-                              {list.tasks.map((task, taskIndex) => (
-                                <Draggable
-                                  key={`task` + task?.task_id}
-                                  draggableId={`task` + task?.task_id}
-                                  index={taskIndex}
-                                >
-                                  {(provided) => (
-                                    <Box
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      sx={{
-                                        border: "1px solid red",
-                                        padding: 1,
-                                        borderRadius: 1,
-                                        background: "#fff",
-                                        userSelect: "none",
-                                      }}
-                                      onClick={(e) => {
-                                        if (e.detail === 2) {
-                                          setTaskDetailDialog({
-                                            open: true,
-                                            task: task,
-                                            handle: (newValue: TaskType) => {
-                                              let updatedList = [...lists];
-                                              updatedList = updatedList.map(
-                                                (item) => {
-                                                  if (
-                                                    item.list_id ===
-                                                    list.list_id
-                                                  ) {
-                                                    let updatedTask = [
-                                                      ...item.tasks,
-                                                    ];
+                              <MoreVert sx={{ color: "white" }} />
+                            </IconButton>
+                          </Stack>
 
-                                                    updatedTask =
-                                                      updatedTask.map(
-                                                        (taskEl) => {
-                                                          if (
-                                                            taskEl.task_id ===
+                          <Droppable
+                            key={`task${list.list_id}`}
+                            droppableId={`task-${list.list_id}`}
+                            isDropDisabled={draggingType === "list"}
+                            isCombineEnabled={false}
+                            ignoreContainerClipping={false}
+                            direction="vertical"
+                          >
+                            {(provided) => (
+                              <Stack
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                spacing={1}
+                                sx={{
+                                  padding: 1,
+                                }}
+                              >
+                                {(list.tasks || []).map((task, taskIndex) => (
+                                  <Draggable
+                                    key={`task` + task?.task_id}
+                                    draggableId={`task` + task?.task_id}
+                                    index={taskIndex}
+                                  >
+                                    {(provided) => (
+                                      <Box
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        sx={{
+                                          // border: "1px solid red",
+                                          boxShadow: "0px 0px 5px 0px #cecece",
+                                          padding: 1,
+                                          borderRadius: 1,
+                                          background: "#fff",
+                                          userSelect: "none",
+                                        }}
+                                        onClick={(e) => {
+                                          if (e.detail === 2) {
+                                            setTaskDetailDialog({
+                                              open: true,
+                                              task: task,
+                                              remove: () => {
+                                                let updatedList = [...lists];
+                                                updatedList = updatedList.map(
+                                                  (item) => {
+                                                    if (
+                                                      item.list_id ===
+                                                      list.list_id
+                                                    ) {
+                                                      let updatedTask = [
+                                                        ...(item.tasks || []),
+                                                      ];
+
+                                                      updatedTask =
+                                                        updatedTask.filter(
+                                                          (item) =>
+                                                            item.task_id !==
                                                             task.task_id
-                                                          ) {
-                                                            taskEl.description =
-                                                              newValue.description;
-                                                            taskEl.title =
-                                                              newValue.title;
-                                                          }
-                                                          return taskEl;
-                                                        }
-                                                      );
+                                                        );
 
-                                                    item.tasks = updatedTask;
+                                                      item.tasks = updatedTask;
+                                                    }
+                                                    return item;
                                                   }
-                                                  return item;
-                                                }
-                                              );
-                                              setLists(updatedList);
-                                            },
-                                          });
-                                        }
-                                      }}
-                                    >
-                                      {task.title}
-                                    </Box>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                              <AddTaskButton
-                                onClick={() =>
-                                  handleAddTaskButton(list.list_id)
-                                }
-                              />
-                            </Stack>
-                          )}
-                        </Droppable>
-                      </Box>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-                <AddListButton onClick={handleAddListButton} />
-              </Stack>
-            )}
-          </Droppable>
-        </Box>
-      </DragDropContext>
-      <ListDetail
-        open={listDetailDialog.open}
-        onClose={() =>
-          setListDetailDialog({
-            open: false,
-            listName: "",
-            handle: () => {},
-          })
-        }
-        handle={listDetailDialog.handle}
-        listName={listDetailDialog.listName}
-      />
-      <TaskDetail
-        open={taskDetailDialog.open}
-        onClose={() =>
-          setTaskDetailDialog((prev) => ({ ...prev, open: false }))
-        }
-        task={taskDetailDialog.task}
-        handle={taskDetailDialog.handle}
-      />
-    </Box>
+                                                );
+                                                setLists(updatedList);
+                                              },
+                                              handle: (newValue: Task) => {
+                                                let updatedList = [...lists];
+                                                updatedList = updatedList.map(
+                                                  (item) => {
+                                                    if (
+                                                      item.list_id ===
+                                                      list.list_id
+                                                    ) {
+                                                      let updatedTask = [
+                                                        ...(item.tasks || []),
+                                                      ];
+
+                                                      updatedTask =
+                                                        updatedTask.map(
+                                                          (taskEl) => {
+                                                            if (
+                                                              taskEl.task_id ===
+                                                              task.task_id
+                                                            ) {
+                                                              taskEl.description =
+                                                                newValue.description;
+                                                              taskEl.title =
+                                                                newValue.title;
+                                                            }
+                                                            return taskEl;
+                                                          }
+                                                        );
+
+                                                      item.tasks = updatedTask;
+                                                    }
+                                                    return item;
+                                                  }
+                                                );
+                                                setLists(updatedList);
+                                              },
+                                            });
+                                          }
+                                        }}
+                                      >
+                                        {task.title}
+                                      </Box>
+                                    )}
+                                  </Draggable>
+                                ))}
+                                {provided.placeholder}
+                                <AddTaskButton
+                                  onClick={() =>
+                                    handleAddTaskButton(list.list_id)
+                                  }
+                                />
+                              </Stack>
+                            )}
+                          </Droppable>
+                        </Box>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                  <AddListButton onClick={handleAddListButton} />
+                </Stack>
+              )}
+            </Droppable>
+          </Box>
+        </DragDropContext>
+        <ListDetail
+          open={listDetailDialog.open}
+          onClose={() =>
+            setListDetailDialog({
+              open: false,
+              listName: "",
+              handle: () => {},
+              remove: () => {},
+            })
+          }
+          handle={listDetailDialog.handle}
+          listName={listDetailDialog.listName}
+          onRemove={listDetailDialog.remove}
+        />
+        <TaskDetail
+          open={taskDetailDialog.open}
+          onClose={() =>
+            setTaskDetailDialog((prev) => ({ ...prev, open: false }))
+          }
+          task={taskDetailDialog.task}
+          handle={taskDetailDialog.handle}
+          onRemove={taskDetailDialog.remove}
+        />
+      </Box>
+    </Layout>
   );
 };
 const AddTaskButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
@@ -382,9 +414,10 @@ const AddTaskButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
     <Stack
       sx={{
         height: 40,
-        background: "#c9c9c9",
+        background: "#eeeeee",
         borderRadius: 2,
         cursor: "pointer",
+        transition: "0.3s",
         ":hover": {
           background: "#e2e2e2",
         },
@@ -404,9 +437,10 @@ const AddListButton: React.FC<{ onClick: () => void }> = ({ onClick }) => {
         width: 200,
         minWidth: 200,
         height: 40,
-        background: "#c9c9c9",
+        background: "#eeeeee",
         borderRadius: 2,
         cursor: "pointer",
+        transition: "0.3s",
         ":hover": {
           background: "#e2e2e2",
         },

@@ -33,7 +33,8 @@ const LoginPage: React.FC = () => {
     }
 
     localStorage.setItem("token", result?.data?.token || "");
-    router.replace("/board");
+    router.push("/board");
+
   };
 
   const navigateToRegister = () => {
@@ -85,7 +86,7 @@ const LoginPage: React.FC = () => {
               component="button"
               variant="body2"
               color="primary"
-              onClick={navigateToRegister} // Navigate to the Register page
+              onClick={navigateToRegister}
             >
               Register here
             </Link>
